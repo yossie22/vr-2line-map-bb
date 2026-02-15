@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<title>VRパワースポットツアー</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; background: #222; }
+.map-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #222; }
+.map-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.text-overlay { position: absolute; top: 3%; left: 0; right: 0; z-index: 100; padding: 0 20px; pointer-events: none; text-align: left; }
+.overlay-title { font-size: 37px; color: #ffffff; font-weight: bold; font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; text-shadow: 0 0 10px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.76), 0 0 30px rgba(0,0,0,0.57), 0 0 40px rgba(0,0,0,0.38); margin-bottom: 12px; }
+.overlay-desc { font-size: 20px; color: #ffffff; white-space: pre-wrap; font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; line-height: 1.6; text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7200000000000001), 0 0 30px rgba(0,0,0,0.54), 0 0 40px rgba(0,0,0,0.36000000000000004); }
+.map-pin { position: absolute; transform: translate(-50%, -100%); cursor: pointer; z-index: 10; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s; -webkit-tap-highlight-color: transparent; }
+.map-pin:hover, .map-pin:active { transform: translate(-50%, -100%) scale(1.15); }
+.pin-icon { width: 36px; height: 36px; border: 3px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+.pin-number { transform: rotate(45deg); font-size: 14px; font-weight: bold; color: white; line-height: 1; }
+.pin-shadow { width: 10px; height: 5px; background: rgba(0,0,0,0.25); border-radius: 50%; margin-top: 2px; }
+.pin-label { background: rgba(255,255,255,0.95); color: #333; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.4); margin-bottom: 4px; pointer-events: none; font-family: sans-serif; }
+.compass-container { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.compass-icon { width: 24px; height: 24px; background: rgba(255,255,255,0.95); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; position: relative; }
+.compass-needle { position: absolute; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid #e8453c; transform-origin: center 8px; }
+.compass-text { background: rgba(255,255,255,0.95); color: #e8453c; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-family: sans-serif; }
+</style>
+</head>
+<body>
+<div class="map-container">
+  <img src="map.jpg" alt="地図" class="map-image">
+<div class="text-overlay">
+  <div class="overlay-title">高尾山西展望台と大野川空撮の2ライン</div>
+  <div class="overlay-desc">高尾山西展望台と大野川空撮の2ライン方式によるテスト</div>
+</div>
+</div>
+<script>
+var MAP_BOUNDS = {
+  topLeft: { lat: 33.220972, lng: 131.639732 },
+  bottomRight: { lat: 33.186489, lng: 131.710824 }
+};
+var PINS = [
+  { lat: 33.209318, lng: 131.655105, name: 'スタート地点', scene: 1, line: 'takao', color: '#e8453c' },
+  { lat: 33.210344269632216, lng: 131.65308456444467, name: '終点', scene: 21, line: 'takao', color: '#e8453c', heading: 30 },
+  { lat: 33.190052, lng: 131.684697, name: '飛行開始', scene: 1, line: 'oonogawa', color: '#3498db', heading: -1 },
+  { lat: 33.192529, lng: 131.683398, name: '到達点', scene: 11, line: 'oonogawa', color: '#3498db', heading: 0 }
+];
+
+function goToScene(pin) {
+  var url = './' + pin.line + '/viewer.html?scene=' + pin.scene;
+  console.log('📍 移動先:', url);
+  console.log('📂 ライン:', pin.line, 'シーン:', pin.scene);
+  window.location.href = url;
+}
+
+function gpsToPercent(lat, lng) {
+  var x = (lng - MAP_BOUNDS.topLeft.lng) / (MAP_BOUNDS.bottomRight.lng - MAP_BOUNDS.topLeft.lng) * 100;
+  var y = (MAP_BOUNDS.topLeft.lat - lat) / (MAP_BOUNDS.topLeft.lat - MAP_BOUNDS.bottomRight.lat) * 100;
+  return { x: x, y: y };
+}
+
+var container = document.querySelector('.map-container');
+PINS.forEach(function(pin, i) {
+  var pos = gpsToPercent(pin.lat, pin.lng);
+  var el = document.createElement('div');
+  el.className = 'map-pin';
+  el.style.left = pos.x + '%';
+  el.style.top = pos.y + '%';
+  
+  var compassHTML = '';
+  if (pin.heading !== undefined && pin.heading !== null && !isNaN(pin.heading)) {
+    console.log('🧭 ピン' + (i+1) + ' "' + pin.name + '" にheading=' + pin.heading + '°を設定');
+    compassHTML = '<div class="compass-container"><div class="compass-icon"><div class="compass-needle" style="transform: rotate(' + pin.heading + 'deg);"></div></div><div class="compass-text">' + Math.round(pin.heading) + '°</div></div>';
+  }
+  
+  el.innerHTML = compassHTML + '<div class="pin-label">' + pin.name + '</div><div class="pin-icon" style="background:' + pin.color + ';"><span class="pin-number">' + (i+1) + '</span></div><div class="pin-shadow"></div>';
+  el.addEventListener('click', function() { goToScene(pin); });
+  container.appendChild(el);
+});
+
+console.log('✅ map.html初期化完了 - ピン数:', PINS.length);
+</script>
+</body>
+</html>

@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>VRツアー</title>
+<meta charset="utf-8">
+<meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+<link rel="icon" href="vr-icon.ico" type="image/x-icon">
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+#pano { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+/* UI ボタン類 */
+#mapButton {
+  position: absolute; bottom: 30px; left: 20px; width: 70px; height: 70px;
+  cursor: pointer; z-index: 100; transition: opacity 2s ease, transform 0.3s ease; opacity: 0;
+}
+#mapButton.visible { opacity: 0.6; }
+#mapButton:hover { transform: scale(1.1); opacity: 1; }
+
+#counter {
+  position: absolute; bottom: 30px; left: 110px; width: 60px; height: 60px;
+  background: white; border: 3px solid #ff0000; border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 24px; font-weight: bold; color: #0066ff; z-index: 100;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: opacity 2s ease; opacity: 0;
+  cursor: pointer;
+}
+#counter.visible { opacity: 0.6; }
+
+#volumeContainer {
+  position: absolute; bottom: 30px; left: 185px;
+  height: 60px; display: flex; align-items: center;
+  background: rgba(54, 40, 34, 0.85);
+  padding: 0 20px; border-radius: 30px;
+  z-index: 100; transition: opacity 2s ease; opacity: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+#volumeContainer.visible { opacity: 0.8; pointer-events: auto; }
+
+#volumeLabel {
+  color: #FF8C00;
+  font-weight: bold; font-family: sans-serif;
+  margin-right: 12px; font-size: 18px;
+}
+#volumeSlider {
+  cursor: pointer; width: 100px; height: 8px;
+  accent-color: #00FF00;
+}
+
+/* 矢印ナビ */
+.arrow-nav {
+  position: absolute; width: 60px; height: 60px; cursor: pointer; z-index: 100;
+  transition: opacity 2s ease, transform 0.3s ease; opacity: 0;
+}
+.arrow-nav.visible { opacity: 0.6; }
+.arrow-nav:hover { transform: scale(1.15); opacity: 1; }
+
+#arrowUp    { position: absolute; bottom: 160px; right: 120px; }
+#arrowDown  { position: absolute; bottom: 50px;  right: 120px; }
+#arrowLeft  { position: absolute; bottom: 105px; right: 185px; }
+#arrowRight { position: absolute; bottom: 105px; right: 55px;  }
+
+/* 文字ホットスポット（背景なし・縁取り文字） */
+#textHotspot {
+  position: absolute;
+  bottom: 25px;
+  left: 365px;
+  max-width: 55%;
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  pointer-events: none;
+}
+#textHotspot.visible { opacity: 1; }
+
+#textHotspot p {
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.6;
+  margin: 0;
+  text-align: left;
+
+  /* 黒い縁取り（字幕風） */
+  text-shadow:
+    2px 2px 4px black,
+    -2px 2px 4px black,
+    2px -2px 4px black,
+    -2px -2px 4px black;
+}
+
+/* 角度表示 */
+#angleDisplay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #0066ff;
+  border-radius: 50%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #0066ff;
+  z-index: 100;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  opacity: 0.8;
+  user-select: none;
+}
+#angleDisplay.active { display: flex; }
+
+#angleYaw {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+#anglePitch {
+  font-size: 10px;
+  color: #666;
+}
+
+/* 中央十字マーカー */
+#centerCross {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  display: none;
+}
+#centerCross.active {
+  display: block;
+  opacity: 0.4;
+}
+
+#centerCross::before,
+#centerCross::after {
+  content: '';
+  position: absolute;
+  background: white;
+}
+
+/* 縦線 */
+#centerCross::before {
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+/* 横線 */
+#centerCross::after {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+/* コンパス */
+#compass {
+  position: absolute;
+  top: 20px;
+  right: 90px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid #0066ff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  user-select: none;
+  pointer-events: none;
+}
+#compass.active { display: flex; }
+
+#compassRose {
+  width: 44px;
+  height: 44px;
+  position: relative;
+  transition: transform 0.15s ease;
+}
+
+/* N文字 */
+#compassN {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: bold;
+  color: #e8453c;
+  line-height: 1;
+}
+
+/* 北針（赤） */
+#compassRose::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 16px solid #e8453c;
+  transform: translateX(-50%);
+}
+
+/* 南針（白） */
+#compassRose::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 16px solid #aaa;
+  transform: translateX(-50%);
+}
+
+/* 中心点 */
+#compassCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #333;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+
+  #textHotspot {
+    bottom: 5px;
+    left: 170px;
+    max-width: calc(100% - 200px);
+  }
+  #textHotspot p {
+    font-size: 16px;
+    text-shadow:
+      2px 2px 4px black,
+      -2px 2px 4px black,
+      2px -2px 4px black,
+      -2px -2px 4px black;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="pano"></div>
+
+<!-- 中央十字マーカー -->
+<div id="centerCross"></div>
+
+<img id="mapButton" src="Map戻り-removebg-preview.png" alt="Map" onclick="goToMap()">
+<div id="counter">1</div>
+
+<div id="volumeContainer">
+  <span id="volumeLabel">VOL</span>
+  <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5">
+</div>
+
+<img id="arrowUp" class="arrow-nav" src="上-removebg-preview.png" alt="前進">
+<img id="arrowDown" class="arrow-nav" src="下-removebg-preview.png" alt="後退">
+<img id="arrowLeft" class="arrow-nav" src="左-removebg-preview.png" alt="左へ">
+<img id="arrowRight" class="arrow-nav" src="右-removebg-preview.png" alt="右へ">
+
+<div id="textHotspot">
+  <p id="textContent"></p>
+</div>
+
+<!-- コンパス -->
+<div id="compass">
+  <div id="compassRose">
+    <span id="compassN">N</span>
+    <div id="compassCenter"></div>
+  </div>
+</div>
+
+<!-- 角度表示 -->
+<div id="angleDisplay">
+  <div id="angleYaw">0°</div>
+  <div id="anglePitch">0°</div>
+</div>
+
+<script src="vendor/screenfull.min.js"></script>
+<script src="vendor/bowser.min.js"></script>
+<script src="vendor/marzipano.js"></script>
+<script src="data.js"></script>
+
+<script>
+(function() {
+'use strict';
+
+/* ------------------------------
+   ここから JS 本体（前半）
+------------------------------ */
+
+var SWITCH_THRESHOLD = 91;
+var Marzipano = window.Marzipano;
+var data = window.APP_DATA;
+var panoElement = document.querySelector('#pano');
+var viewer = new Marzipano.Viewer(panoElement);
+
+var scenes = data.scenes;
+var scenesData = {};
+var currentScene = null;
+var currentView = null;
+var currentSceneObj = null;
+
+/* ▼▼▼ iOS 対応：AudioContext ▼▼▼ */
+var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+var currentAudio = null;
+var currentVolume = 0.5;
+var audioEnabled = false;
+var playedPositions = {};
+
+/* 文字ホットスポット */
+var visitedScenes = {};
+var textHotspotElement = document.getElementById('textHotspot');
+var textContentElement = document.getElementById('textContent');
+
+/* 角度表示と十字マーカー */
+var angleDisplay = document.getElementById('angleDisplay');
+var angleYaw = document.getElementById('angleYaw');
+var anglePitch = document.getElementById('anglePitch');
+var centerCross = document.getElementById('centerCross');
+var compass = document.getElementById('compass');
+var compassRose = document.getElementById('compassRose');
+var debugMode = false;
+var counterLastTapTime = 0;
+
+/* URL パラメータ */
+var urlParams = new URLSearchParams(window.location.search);
+var startSceneParam = urlParams.get('scene');
+var startSceneNum = startSceneParam ? parseInt(startSceneParam) : 1;
+
+/* 行き・帰り分類 */
+var sceneInfo = {};
+var ikiScenes = [];
+var kaeriScenes = [];
+
+scenes.forEach(function(scene) {
+  var name = scene.name;
+  if (name.indexOf('b') > -1 || name.indexOf('ｂ') > -1 || name.indexOf('B') > -1) {
+    kaeriScenes.push(scene);
+  } else {
+    ikiScenes.push(scene);
+  }
+});
+
+/* 行きのシーン情報 */
+ikiScenes.forEach(function(scene, index) {
+  var position = index + 1;
+  var pairIndex = ikiScenes.length - index - 1;
+  var pairId = kaeriScenes[pairIndex] ? kaeriScenes[pairIndex].id : null;
+
+  sceneInfo[scene.id] = {
+    position: position,
+    direction: 'iki',
+    pair: pairId
+  };
+});
+
+/* 帰りのシーン情報 */
+kaeriScenes.forEach(function(scene, index) {
+  var position = index + 1;
+  var pairIndex = kaeriScenes.length - index - 1;
+  var pairId = ikiScenes[pairIndex] ? ikiScenes[pairIndex].id : null;
+
+  sceneInfo[scene.id] = {
+    position: position,
+    direction: 'kaeri',
+    pair: pairId
+  };
+});
+
+var maxPosition = Math.max(ikiScenes.length, kaeriScenes.length);
+
+/* シーン生成 */
+scenes.forEach(function(sceneData) {
+  var urlPrefix = "tiles";
+  var source = Marzipano.ImageUrlSource.fromString(
+    urlPrefix + "/" + sceneData.id + "/{z}/{f}/{y}/{x}.jpg",
+    { cubeMapPreviewUrl: urlPrefix + "/" + sceneData.id + "/preview.jpg" }
+  );
+
+  var geometry = new Marzipano.CubeGeometry(sceneData.levels);
+  var limiter = Marzipano.RectilinearView.limit.traditional(
+    sceneData.faceSize, 75*Math.PI/180, 120*Math.PI/180
+  );
+  var view = new Marzipano.RectilinearView(sceneData.initialViewParameters, limiter);
+
+  var scene = viewer.createScene({
+    source: source,
+    geometry: geometry,
+    view: view,
+    pinFirstLevel: false
+  });
+
+  var info = sceneInfo[sceneData.id] || { position: 1, direction: 'iki', pair: null };
+
+  scenesData[sceneData.id] = {
+    scene: scene,
+    view: view,
+    data: {
+      id: sceneData.id,
+      position: info.position,
+      direction: info.direction,
+      pair: info.pair,
+      infoHotspots: sceneData.infoHotspots || [],
+      heading: sceneData.heading // GPS撮影方向データ（あれば）
+    }
+  };
+});
+
+/* ------------------------------
+   文字ホットスポット表示
+------------------------------ */
+function showTextHotspot(sceneId) {
+  var sceneObj = scenesData[sceneId];
+  if (!sceneObj) return;
+
+  if (sceneObj.data.direction !== 'iki') {
+    hideTextHotspot();
+    return;
+  }
+
+  if (visitedScenes[sceneId]) {
+    hideTextHotspot();
+    return;
+  }
+
+  var hotspots = sceneObj.data.infoHotspots;
+  if (!hotspots || hotspots.length === 0) {
+    hideTextHotspot();
+    return;
+  }
+
+  var hotspot = hotspots[0];
+  if (hotspot.text) {
+    textContentElement.textContent = hotspot.text;
+
+    setTimeout(function() {
+      textHotspotElement.classList.add('visible');
+    }, 500);
+
+    setTimeout(function() {
+      hideTextHotspot();
+    }, 7000);
+
+    visitedScenes[sceneId] = true;
+  } else {
+    hideTextHotspot();
+  }
+}
+
+function hideTextHotspot() {
+  textHotspotElement.classList.remove('visible');
+}
+
+/* ------------------------------
+   シーン切替
+------------------------------ */
+function switchScene(sceneId, yaw, pitch) {
+  var newSceneObj = scenesData[sceneId];
+  if (!newSceneObj) return;
+
+  currentSceneObj = newSceneObj;
+  currentScene = newSceneObj.scene;
+  currentView = newSceneObj.view;
+
+  currentScene.switchTo({
+    transitionDuration: 500
+  });
+
+  if (typeof yaw !== 'undefined' && typeof pitch !== 'undefined') {
+    currentView.setParameters({ yaw: yaw, pitch: pitch });
+  }
+
+  var counter = document.getElementById('counter');
+  counter.textContent = currentSceneObj.data.position;
+
+  if (currentSceneObj.data.direction === 'iki') {
+    playPositionSound(currentSceneObj.data.position);
+  }
+
+  showTextHotspot(sceneId);
+  updateArrowVisibility();
+}
+
+/* ------------------------------
+   角度計算
+------------------------------ */
+function normalizeAngle(angle) {
+  while (angle > Math.PI) angle -= 2 * Math.PI;
+  while (angle < -Math.PI) angle += 2 * Math.PI;
+  return angle;
+}
+function degToRad(deg) { return deg * Math.PI / 180; }
+function radToDeg(rad) { return rad * 180 / Math.PI; }
+
+/* ------------------------------
+   角度表示の更新
+------------------------------ */
+function updateAngleDisplay() {
+  if (!currentView || !debugMode) return;
+  
+  var params = currentView.parameters();
+  var yawDeg = Math.round(radToDeg(normalizeAngle(params.yaw)));
+  var pitchDeg = Math.round(radToDeg(params.pitch));
+  
+  angleYaw.textContent = yawDeg + '°';
+  anglePitch.textContent = pitchDeg + '°';
+}
+
+/* ------------------------------
+   コンパスの更新（全デバイス共通：VR画面のyaw角度に連動）
+------------------------------ */
+function updateCompass() {
+  if (!debugMode || !currentView) return;
+  
+  // headingデータがない場合はコンパスを非表示にする
+  if (!currentSceneObj || currentSceneObj.data.heading === undefined || currentSceneObj.data.heading === null || currentSceneObj.data.heading === '') {
+    compass.classList.remove('active');
+    return;
+  }
+  
+  // headingデータがある場合のみコンパスを表示
+  compass.classList.add('active');
+  
+  var params = currentView.parameters();
+  var yawDeg = radToDeg(normalizeAngle(params.yaw));
+  var rotation = currentSceneObj.data.heading - yawDeg;
+  
+  compassRose.style.transform = 'rotate(' + rotation + 'deg)';
+}
+
+/* ------------------------------
+   デバッグモード切り替え
+------------------------------ */
+function toggleDebugMode() {
+  debugMode = !debugMode;
+  
+  if (debugMode) {
+    angleDisplay.classList.add('active');
+    centerCross.classList.add('active');
+    // コンパスはheadingデータがある場合のみ表示
+    if (currentSceneObj && currentSceneObj.data.heading !== undefined && currentSceneObj.data.heading !== null && currentSceneObj.data.heading !== '') {
+      compass.classList.add('active');
+    }
+  } else {
+    angleDisplay.classList.remove('active');
+    centerCross.classList.remove('active');
+    compass.classList.remove('active');
+  }
+}
+
+/* ------------------------------
+   矢印表示制御
+------------------------------ */
+function updateArrowVisibility() {
+  if (!currentView || !currentSceneObj) return;
+
+  var params = currentView.parameters();
+  var currentYawDeg = Math.abs(radToDeg(normalizeAngle(params.yaw)));
+
+  var arrowUp = document.getElementById('arrowUp');
+  var arrowDown = document.getElementById('arrowDown');
+  var arrowLeft = document.getElementById('arrowLeft');
+  var arrowRight = document.getElementById('arrowRight');
+
+  if (currentYawDeg <= 45 || currentYawDeg > 135) {
+    arrowUp.style.display = 'block';
+    arrowDown.style.display = 'block';
+    arrowLeft.style.display = 'none';
+    arrowRight.style.display = 'none';
+  } else {
+    arrowUp.style.display = 'none';
+    arrowDown.style.display = 'none';
+    arrowLeft.style.display = 'block';
+    arrowRight.style.display = 'block';
+  }
+}
+
+/* ------------------------------
+   自動シーン切替（往復）+ 角度更新
+------------------------------ */
+setInterval(function() {
+  if (!currentView || !currentSceneObj) return;
+
+  var params = currentView.parameters();
+  var currentYaw = normalizeAngle(params.yaw);
+
+  updateArrowVisibility();
+  updateAngleDisplay(); // 角度表示を更新
+  updateCompass();      // コンパスを更新
+
+  if (currentYaw > degToRad(SWITCH_THRESHOLD) || currentYaw < -degToRad(SWITCH_THRESHOLD)) {
+    var pairSceneId = currentSceneObj.data.pair;
+    if (!pairSceneId) return;
+
+    var newYaw = currentYaw > 0 ? currentYaw - Math.PI : currentYaw + Math.PI;
+    switchScene(pairSceneId, newYaw, params.pitch);
+  }
+}, 100);
+
+/* ------------------------------
+   音量スライダー
+------------------------------ */
+var volumeSlider = document.getElementById('volumeSlider');
+volumeSlider.addEventListener('input', function() {
+  currentVolume = this.value;
+  if (currentAudio) currentAudio.volume = currentVolume;
+});
+
+/* ------------------------------
+   効果音再生
+------------------------------ */
+function playPositionSound(position) {
+  if (!audioEnabled) return;
+  if (playedPositions[position]) return;
+
+  var file = "sounds/position" + position + ".mp3";
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  var audio = new Audio(file);
+  audio.volume = currentVolume;
+
+  var track = audioCtx.createMediaElementSource(audio);
+  track.connect(audioCtx.destination);
+
+  audio.play().catch(function(e) {
+    console.log("Audio play failed:", e);
+  });
+
+  currentAudio = audio;
+  playedPositions[position] = true;
+}
+
+/* ------------------------------
+   初回タップで音声許可
+------------------------------ */
+function tryEnableAudio() {
+  audioEnabled = true;
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}
+document.addEventListener('click', tryEnableAudio, { once: true });
+document.addEventListener('touchstart', tryEnableAudio, { once: true });
+
+/* ------------------------------
+   地図へ戻る
+------------------------------ */
+window.goToMap = function() {
+  if (currentAudio) currentAudio.pause();
+  visitedScenes = {};
+  playedPositions = {};
+  window.location.href = "../map.html";  // ← ../ を追加
+};
+/* ------------------------------
+   カウンターのダブルタップでデバッグモード切り替え
+------------------------------ */
+var counter = document.getElementById('counter');
+counter.addEventListener('click', function(e) {
+  var now = Date.now();
+  var timeSinceLastTap = now - counterLastTapTime;
+  
+  if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+    // ダブルタップ検出（300ms以内）
+    toggleDebugMode();
+    counterLastTapTime = 0; // リセット
+  } else {
+    // シングルタップ
+    counterLastTapTime = now;
+  }
+});
+
+/* ------------------------------
+   移動処理
+------------------------------ */
+/* ------------------------------
+   移動処理（確定修正版：180度逆転対策）
+------------------------------ */
+function executeMoveByDelta(delta) {
+  if (!currentView || !currentSceneObj) return;
+
+  var nextPos = currentSceneObj.data.position + delta;
+  if (nextPos < 1 || nextPos > maxPosition) return;
+
+  for (var id in scenesData) {
+    if (scenesData[id].data.position === nextPos &&
+        scenesData[id].data.direction === currentSceneObj.data.direction) {
+      switchScene(id, currentView.parameters().yaw, currentView.parameters().pitch);
+      return;
+    }
+  }
+}
+
+window.moveForward = function() {
+  var yaw = normalizeAngle(currentView.parameters().yaw);
+  var isLookingFront = Math.abs(radToDeg(yaw)) <= 90;
+  var delta;
+
+  if (currentSceneObj.data.direction === 'iki') {
+    // 行きシーン：正面なら+1（進む）、後ろなら-1（戻る）
+    delta = isLookingFront ? 1 : -1;
+  } else {
+    // 帰りシーン：正面なら-1（進む）、後ろなら+1（戻る）
+    delta = isLookingFront ? -1 : 1;
+  }
+  executeMoveByDelta(delta);
+};
+
+window.moveBackward = function() {
+  var yaw = normalizeAngle(currentView.parameters().yaw);
+  var isLookingFront = Math.abs(radToDeg(yaw)) <= 90;
+  var delta;
+
+  if (currentSceneObj.data.direction === 'iki') {
+    // 行きシーン：正面なら-1（下がる）、後ろなら+1（引き返す）
+    delta = isLookingFront ? -1 : 1;
+  } else {
+    // 帰りシーン：正面なら+1（下がる）、後ろなら-1（引き返す）
+    delta = isLookingFront ? 1 : -1;
+  }
+  executeMoveByDelta(delta);
+};
+
+window.moveLeft = function() {
+  var yaw = normalizeAngle(currentView.parameters().yaw);
+  // 横移動は「景色が流れる方向」に合わせるため、絶対的なdeltaで制御
+  if (yaw < 0) {
+    executeMoveByDelta(-1);
+  } else {
+    executeMoveByDelta(1);
+  }
+};
+
+window.moveRight = function() {
+  var yaw = normalizeAngle(currentView.parameters().yaw);
+  if (yaw > 0) {
+    executeMoveByDelta(-1);
+  } else {
+    executeMoveByDelta(1);
+  }
+};
+
+/* ------------------------------
+   UI 自動フェード
+------------------------------ */
+var uiElements = [
+  document.getElementById('mapButton'),
+  document.getElementById('counter'),
+  document.getElementById('volumeContainer'),
+  document.getElementById('arrowUp'),
+  document.getElementById('arrowDown'),
+  document.getElementById('arrowLeft'),
+  document.getElementById('arrowRight')
+];
+
+var hideTimer = null;
+
+function showUI() {
+  uiElements.forEach(function(el) { if (el) el.classList.add('visible'); });
+
+  if (hideTimer) clearTimeout(hideTimer);
+
+  hideTimer = setTimeout(function() {
+    uiElements.forEach(function(el) { if (el) el.classList.remove('visible'); });
+  }, 2000);
+}
+
+// 画面操作時にUIを表示
+document.addEventListener('mousemove', showUI);
+document.addEventListener('touchstart', showUI);
+
+/* ------------------------------
+   長押し自動移動
+------------------------------ */
+var autoMoveInterval = null;
+var autoMoveDelay = 800;
+
+function startAutoMove(moveFunction) {
+  if (autoMoveInterval) return;
+  moveFunction();
+  autoMoveInterval = setInterval(moveFunction, autoMoveDelay);
+}
+
+function stopAutoMove() {
+  if (autoMoveInterval) {
+    clearInterval(autoMoveInterval);
+    autoMoveInterval = null;
+  }
+}
+
+var arrowUp = document.getElementById('arrowUp');
+var arrowDown = document.getElementById('arrowDown');
+var arrowLeft = document.getElementById('arrowLeft');
+var arrowRight = document.getElementById('arrowRight');
+
+arrowUp.addEventListener('mousedown', function() { startAutoMove(window.moveForward); });
+arrowUp.addEventListener('mouseup', stopAutoMove);
+arrowUp.addEventListener('mouseleave', stopAutoMove);
+arrowUp.addEventListener('touchstart', function(e) { e.preventDefault(); startAutoMove(window.moveForward); });
+arrowUp.addEventListener('touchend', function(e) { e.preventDefault(); stopAutoMove(); });
+
+arrowDown.addEventListener('mousedown', function() { startAutoMove(window.moveBackward); });
+arrowDown.addEventListener('mouseup', stopAutoMove);
+arrowDown.addEventListener('mouseleave', stopAutoMove);
+arrowDown.addEventListener('touchstart', function(e) { e.preventDefault(); startAutoMove(window.moveBackward); });
+arrowDown.addEventListener('touchend', function(e) { e.preventDefault(); stopAutoMove(); });
+
+arrowLeft.addEventListener('mousedown', function() { startAutoMove(window.moveLeft); });
+arrowLeft.addEventListener('mouseup', stopAutoMove);
+arrowLeft.addEventListener('mouseleave', stopAutoMove);
+arrowLeft.addEventListener('touchstart', function(e) { e.preventDefault(); startAutoMove(window.moveLeft); });
+arrowLeft.addEventListener('touchend', function(e) { e.preventDefault(); stopAutoMove(); });
+
+arrowRight.addEventListener('mousedown', function() { startAutoMove(window.moveRight); });
+arrowRight.addEventListener('mouseup', stopAutoMove);
+arrowRight.addEventListener('mouseleave', stopAutoMove);
+arrowRight.addEventListener('touchstart', function(e) { e.preventDefault(); startAutoMove(window.moveRight); });
+arrowRight.addEventListener('touchend', function(e) { e.preventDefault(); stopAutoMove(); });
+
+/* ------------------------------
+   初期シーン
+------------------------------ */
+var initialSceneId = null;
+
+for (var id in scenesData) {
+  if (scenesData[id].data.position === startSceneNum &&
+      scenesData[id].data.direction === 'iki') {
+    initialSceneId = id;
+    break;
+  }
+}
+
+if (initialSceneId) switchScene(initialSceneId);
+else switchScene('0-1');
+
+showUI();
+
+})();
+</script>
+
+</body>
+</html>

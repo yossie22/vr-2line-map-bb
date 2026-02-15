@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<title>Map Generator v2 - 自動保存対応</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+  background: #f0f4f8;
+  color: #333;
+  min-height: 100vh;
+  padding: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: #0066cc;
+  margin-bottom: 6px;
+  font-size: 22px;
+}
+.subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.section {
+  background: #ffffff;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.section h2 {
+  color: #0066cc;
+  font-size: 15px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #e0e7ef;
+  padding-bottom: 8px;
+}
+
+.info-box {
+  background: #e3f2fd;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #2196F3;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.warning-box {
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #ffc107;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #856404;
+}
+
+.success-box {
+  background: #d4edda;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #28a745;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #155724;
+}
+
+.error-box {
+  background: #f8d7da;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #dc3545;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #721c24;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+label {
+  color: #666;
+  font-size: 13px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+input[type="text"], input[type="number"], select, textarea {
+  background: #f7f9fc;
+  border: 1px solid #c5d0de;
+  border-radius: 6px;
+  color: #333;
+  padding: 7px 10px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 160px;
+}
+
+input[type="file"] {
+  font-size: 13px;
+}
+
+textarea {
+  min-height: 60px;
+  font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+  resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+  background: #fff;
+}
+
+.line-item {
+  background: #f0f4f8;
+  border: 1px solid #dde3ea;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.line-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.line-info {
+  flex: 1;
+}
+
+.line-name {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.line-folder {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}
+
+.line-datajs-status {
+  font-size: 11px;
+  color: #27ae60;
+  margin-top: 4px;
+}
+
+.btn-edit-line {
+  background: #3498db;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-del-line {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.pin-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  background: #f0f4f8;
+  border: 1px solid #dde3ea;
+  border-radius: 8px;
+  padding: 10px;
+  flex-wrap: wrap;
+}
+
+.pin-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.pin-row input, .pin-row select {
+  min-width: 100px;
+}
+
+.pin-row input.name-input {
+  min-width: 140px;
+}
+
+.pin-row input.gps-paste-input {
+  min-width: 200px;
+  background: #fff9e6;
+  border: 2px dashed #ffc107;
+}
+
+.btn-del {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.btn-add {
+  background: #27ae60;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-add:hover { background: #2ecc71; }
+
+.btn-generate {
+  background: linear-gradient(135deg, #0088ff, #0044cc);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 6px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0,100,255,0.3);
+}
+
+.btn-generate:hover { opacity: 0.9; }
+
+.btn-copy {
+  background: #8e44ad;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-copy:hover { background: #9b59b6; }
+
+.btn-download {
+  background: #27ae60;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-download:hover { background: #2ecc71; }
+
+.btn-clear {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+.btn-clear:hover { background: #c0392b; }
+
+#outputMap {
+  background: #1a1a2e;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12px;
+  color: #0f0;
+  font-family: monospace;
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  margin-top: 10px;
+}
+
+.success-msg {
+  text-align: center;
+  color: #27ae60;
+  font-size: 14px;
+  margin-top: 8px;
+  display: none;
+}
+
+.preview-box {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="10" height="10" fill="%23ddd"/><rect x="10" y="10" width="10" height="10" fill="%23ddd"/><rect x="10" width="10" height="10" fill="%23eee"/><rect y="10" width="10" height="10" fill="%23eee"/></svg>');
+  border: 2px dashed #c5d0de;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+  min-height: 120px;
+}
+
+.preview-title {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.color-input {
+  width: 60px !important;
+  min-width: 60px !important;
+  padding: 2px !important;
+  height: 32px;
+}
+
+.range-input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.range-value {
+  min-width: 50px;
+  text-align: center;
+  color: #0066cc;
+  font-weight: bold;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  overflow-y: auto;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-close:hover { color: #000; }
+
+.datajs-section {
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.datajs-line-item {
+  background: white;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.datajs-line-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.datajs-line-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.datajs-line-name {
+  font-weight: bold;
+  flex: 1;
+}
+
+.folder-example {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  margin-top: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.gps-quick-paste {
+  background: #fff9e6;
+  border: 2px dashed #ffc107;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.gps-quick-paste strong {
+  color: #856404;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.save-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #27ae60;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: none;
+  z-index: 2000;
+}
+</style>
+</head>
+<body>
+
+<div class="save-status" id="saveStatus">💾 自動保存しました</div>
+
+<h1>🗺️ VRツアー Map Generator v2</h1>
+<p class="subtitle">GPS一括入力 + 自動保存対応 <button class="btn-clear" onclick="clearAllData()">全データクリア</button></p>
+
+<!-- ① ツアータイトル -->
+<div class="section">
+  <h2>① ツアータイトル</h2>
+  <div class="row">
+    <label>タイトル</label>
+    <input type="text" id="tourTitle" value="VRパワースポットツアー" placeholder="例：VRパワースポットツアー">
+  </div>
+</div>
+
+<!-- ② ライン管理 -->
+<div class="section">
+  <h2>② ライン（ルート）の設定</h2>
+  <div class="info-box">
+    <strong>💡 ラインとは？</strong><br>
+    メインルート（洞窟探検）、堀井、神社など、それぞれ独立したVR体験です。各ラインは別フォルダに配置されます。
+  </div>
+  
+  <div class="warning-box">
+    <strong>⚠️ 重要：フォルダ名のルール</strong><br>
+    • 英数字、ハイフン、アンダースコアのみ使用可能<br>
+    • 日本語、スペース、特殊文字は使用不可<br>
+    • 例：OK = <code>takao</code>, <code>r80214</code>, <code>main-route</code><br>
+    • 例：NG = <code>高尾VR</code>, <code>main route</code>, <code>堀井①</code>
+  </div>
+  
+  <div id="lineList"></div>
+  
+  <button class="btn-add" onclick="showAddLineModal()">➕ ライン追加</button>
+</div>
+
+<!-- ③ 地図上のタイトル・説明文 -->
+<div class="section">
+  <h2>③ 地図上のタイトル・説明文</h2>
+  
+  <h3 style="color:#0066cc; font-size:14px; margin: 16px 0 10px 0;">📝 大タイトル</h3>
+  <div class="row">
+    <label>テキスト</label>
+    <input type="text" id="mainTitle" value="" placeholder="例：高尾山パワースポット巡り">
+  </div>
+  <div class="row">
+    <label>フォントサイズ</label>
+    <input type="range" id="mainTitleSize" min="20" max="80" value="36" class="range-input">
+    <span class="range-value" id="mainTitleSizeValue">36px</span>
+  </div>
+  <div class="row">
+    <label>文字色</label>
+    <input type="color" id="mainTitleColor" value="#ffffff" class="color-input">
+  </div>
+  <div class="row">
+    <label>シャドウの強さ</label>
+    <input type="range" id="mainTitleShadow" min="0" max="100" value="95" class="range-input">
+    <span class="range-value" id="mainTitleShadowValue">95%</span>
+  </div>
+  
+  <h3 style="color:#0066cc; font-size:14px; margin: 16px 0 10px 0;">📄 説明文</h3>
+  <div class="row">
+    <label>テキスト</label>
+    <textarea id="descText" placeholder="例：5つの見どころを自由に巡れます"></textarea>
+  </div>
+  <div class="row">
+    <label>フォントサイズ</label>
+    <input type="range" id="descSize" min="10" max="40" value="18" class="range-input">
+    <span class="range-value" id="descSizeValue">18px</span>
+  </div>
+  <div class="row">
+    <label>文字色</label>
+    <input type="color" id="descColor" value="#ffffff" class="color-input">
+  </div>
+  <div class="row">
+    <label>シャドウの強さ</label>
+    <input type="range" id="descShadow" min="0" max="100" value="90" class="range-input">
+    <span class="range-value" id="descShadowValue">90%</span>
+  </div>
+  
+  <h3 style="color:#0066cc; font-size:14px; margin: 16px 0 10px 0;">📍 配置</h3>
+  <div class="row">
+    <label>縦位置</label>
+    <select id="textVerticalPos">
+      <option value="top" selected>上部</option>
+      <option value="center">中央</option>
+      <option value="bottom">下部</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>横位置</label>
+    <select id="textHorizontalPos">
+      <option value="left">左寄せ</option>
+      <option value="center" selected>中央</option>
+      <option value="right">右寄せ</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>上からの位置</label>
+    <input type="range" id="textTopOffset" min="0" max="30" value="3" class="range-input">
+    <span class="range-value" id="textTopOffsetValue">3%</span>
+  </div>
+  
+  <div class="preview-box">
+    <div class="preview-title">👁️ プレビュー（実際は地図背景になります）</div>
+    <div id="previewArea" style="text-align: center;"></div>
+  </div>
+</div>
+
+<!-- ④ 地図範囲 - GPS一括入力対応 -->
+<div class="section">
+  <h2>④ 地図画像のGPS範囲</h2>
+  
+  <div class="gps-quick-paste">
+    <strong>🚀 新機能：Googleマップから一括コピペ</strong>
+    <div class="row">
+      <label>左上GPS</label>
+      <input type="text" id="tlGpsQuick" placeholder="例：33.220972, 131.639732" class="gps-paste-input" oninput="parseGpsInput('tl')">
+    </div>
+    <div class="row">
+      <label>右下GPS</label>
+      <input type="text" id="brGpsQuick" placeholder="例：33.208481, 131.654014" class="gps-paste-input" oninput="parseGpsInput('br')">
+    </div>
+  </div>
+  
+  <div style="font-size:12px; color:#888; margin-bottom:10px;">↓ 自動入力されます（個別編集も可能）</div>
+  
+  <div class="row">
+    <label>左上 緯度</label>
+    <input type="text" id="tlLat" placeholder="例：33.209566">
+  </div>
+  <div class="row">
+    <label>左上 経度</label>
+    <input type="text" id="tlLng" placeholder="例：131.651788">
+  </div>
+  <div class="row">
+    <label>右下 緯度</label>
+    <input type="text" id="brLat" placeholder="例：33.208481">
+  </div>
+  <div class="row">
+    <label>右下 経度</label>
+    <input type="text" id="brLng" placeholder="例：131.654014">
+  </div>
+</div>
+
+<!-- ⑤ ピン設定 - GPS一括入力対応 -->
+<div class="section">
+  <h2>⑤ ピン（地点）の設定</h2>
+  <div class="info-box">
+    <strong>💡 新機能：</strong>黄色い「GPS貼付」欄に「33.220972, 131.639732」形式で貼り付けると自動的に緯度・経度に分割されます！<br>
+    <strong>方向°：</strong>整数で入力してください（例：45, 120, 270）
+  </div>
+
+  <div id="pinList"></div>
+
+  <button class="btn-add" onclick="addPin()">➕ ピンを追加</button>
+</div>
+
+<!-- ⑥ data.js更新 -->
+<div class="section">
+  <h2>⑥ 各ラインのdata.js更新（コンパス対応）</h2>
+  <div class="info-box">
+    <strong>📌 重要：</strong>各ラインのdata.jsをアップロードすると、ピンで設定したheading（方向）情報を自動追加します。コンパスを表示するために必要です。
+  </div>
+  
+  <div id="dataJsSection"></div>
+</div>
+
+<!-- ⑦ 生成 -->
+<div class="section">
+  <h2>⑦ map.html生成</h2>
+  <button class="btn-generate" onclick="generate()">🚀 map.htmlを生成</button>
+  
+  <div id="mapSection" style="margin-top: 20px;">
+    <h3 style="color:#0066cc; font-size:14px; margin-bottom: 8px;">✅ map.html（自動ダウンロード済み）</h3>
+    <button class="btn-copy" id="copyMapBtn" style="display:none;" onclick="copyMapCode()">📋 コードをコピー</button>
+    <p class="success-msg" id="successMapMsg">✓ コピーしました！</p>
+    <pre id="outputMap"></pre>
+  </div>
+  
+  <div class="info-box" style="margin-top: 15px;">
+    <strong>📁 フォルダ構成例（フォルダ名は英数字のみ）：</strong>
+    <div class="folder-example">
+project/<br>
+├─ map.html<br>
+├─ map.jpg<br>
+├─ takao/  ← 英数字のみ！<br>
+│  ├─ viewer.html<br>
+│  ├─ data.js<br>
+│  └─ scenes/<br>
+├─ oonogawa/  ← 英数字のみ！<br>
+│  ├─ viewer.html<br>
+│  ├─ data.js<br>
+│  └─ scenes/<br>
+└─ shrine/<br>
+   └─ ...
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: ライン追加・編集 -->
+<div id="lineModal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeLineModal()">&times;</span>
+    <h2 style="color:#0066cc; margin-bottom: 20px;">ライン設定</h2>
+    
+    <div class="row">
+      <label>ライン名</label>
+      <input type="text" id="lineName" placeholder="例：メインルート（日本語OK）">
+    </div>
+    <p style="font-size:12px; color:#888; margin: -5px 0 10px 130px;">表示用の名前（日本語OK）</p>
+    
+    <div class="row">
+      <label>フォルダ名</label>
+      <input type="text" id="lineFolder" placeholder="例：takao" oninput="validateFolderName(this)">
+    </div>
+    <p style="font-size:12px; color:#888; margin: -5px 0 10px 130px;">
+      <strong>英数字、ハイフン、アンダースコアのみ</strong><br>
+      例：takao, r80214, main-route
+    </p>
+    <div id="folderNameError" style="display:none;" class="error-box">
+      ⚠️ フォルダ名に使用できない文字が含まれています
+    </div>
+    
+    <div class="row">
+      <label>ピンの色</label>
+      <input type="color" id="lineColor" value="#e8453c" class="color-input">
+    </div>
+    <div class="row">
+      <label>説明</label>
+      <textarea id="lineDesc" placeholder="例：洞窟内を21地点で巡るメインルート"></textarea>
+    </div>
+    
+    <button class="btn-add" onclick="saveLine()" style="margin-top: 15px;">保存</button>
+  </div>
+</div>
+
+<script>
+var pinCount = 0;
+var lines = [];
+var editingLineIndex = -1;
+var lineDataJsContents = {};
+
+// ページ読み込み時にデータを復元
+window.addEventListener('DOMContentLoaded', function() {
+  loadFromStorage();
+  updateLineList();
+  updateDataJsSection();
+  updatePreview();
+});
+
+// 自動保存機能
+function saveToStorage() {
+  var data = {
+    tourTitle: document.getElementById('tourTitle').value,
+    lines: lines,
+    tlLat: document.getElementById('tlLat').value,
+    tlLng: document.getElementById('tlLng').value,
+    brLat: document.getElementById('brLat').value,
+    brLng: document.getElementById('brLng').value,
+    mainTitle: document.getElementById('mainTitle').value,
+    mainTitleSize: document.getElementById('mainTitleSize').value,
+    mainTitleColor: document.getElementById('mainTitleColor').value,
+    mainTitleShadow: document.getElementById('mainTitleShadow').value,
+    descText: document.getElementById('descText').value,
+    descSize: document.getElementById('descSize').value,
+    descColor: document.getElementById('descColor').value,
+    descShadow: document.getElementById('descShadow').value,
+    textVerticalPos: document.getElementById('textVerticalPos').value,
+    textHorizontalPos: document.getElementById('textHorizontalPos').value,
+    textTopOffset: document.getElementById('textTopOffset').value,
+    pins: []
+  };
+  
+  // ピンデータを収集
+  var rows = document.querySelectorAll('.pin-row');
+  rows.forEach(function(row) {
+    var pinData = {
+      lat: row.querySelector('.p-lat').value,
+      lng: row.querySelector('.p-lng').value,
+      name: row.querySelector('.p-name').value,
+      scene: row.querySelector('.p-scene').value,
+      heading: row.querySelector('.p-heading').value,
+      line: row.querySelector('.p-line').value
+    };
+    data.pins.push(pinData);
+  });
+  
+  localStorage.setItem('mapGeneratorData', JSON.stringify(data));
+  
+  // 保存通知
+  var status = document.getElementById('saveStatus');
+  status.style.display = 'block';
+  setTimeout(function() {
+    status.style.display = 'none';
+  }, 2000);
+}
+
+// データ復元
+function loadFromStorage() {
+  var saved = localStorage.getItem('mapGeneratorData');
+  if (!saved) {
+    // デフォルトラインを追加
+    lines.push({
+      name: '高尾',
+      folder: 'takao',
+      color: '#e8453c',
+      desc: '高尾山ルート'
+    });
+    return;
+  }
+  
+  try {
+    var data = JSON.parse(saved);
+    
+    document.getElementById('tourTitle').value = data.tourTitle || '';
+    lines = data.lines || [];
+    document.getElementById('tlLat').value = data.tlLat || '';
+    document.getElementById('tlLng').value = data.tlLng || '';
+    document.getElementById('brLat').value = data.brLat || '';
+    document.getElementById('brLng').value = data.brLng || '';
+    document.getElementById('mainTitle').value = data.mainTitle || '';
+    document.getElementById('mainTitleSize').value = data.mainTitleSize || 36;
+    document.getElementById('mainTitleColor').value = data.mainTitleColor || '#ffffff';
+    document.getElementById('mainTitleShadow').value = data.mainTitleShadow || 95;
+    document.getElementById('descText').value = data.descText || '';
+    document.getElementById('descSize').value = data.descSize || 18;
+    document.getElementById('descColor').value = data.descColor || '#ffffff';
+    document.getElementById('descShadow').value = data.descShadow || 90;
+    document.getElementById('textVerticalPos').value = data.textVerticalPos || 'top';
+    document.getElementById('textHorizontalPos').value = data.textHorizontalPos || 'center';
+    document.getElementById('textTopOffset').value = data.textTopOffset || 3;
+    
+    // ピンを復元
+    if (data.pins && data.pins.length > 0) {
+      data.pins.forEach(function(pin) {
+        addPin(pin.lat, pin.lng, pin.name, pin.scene, pin.heading, pin.line);
+      });
+    }
+    
+    console.log('✅ データを復元しました');
+  } catch (error) {
+    console.error('データ復元エラー:', error);
+  }
+}
+
+// 全データクリア
+function clearAllData() {
+  if (confirm('全てのデータをクリアしますか？\nこの操作は取り消せません。')) {
+    localStorage.removeItem('mapGeneratorData');
+    location.reload();
+  }
+}
+
+// 入力時に自動保存
+function setupAutoSave() {
+  var inputs = document.querySelectorAll('input, select, textarea');
+  inputs.forEach(function(input) {
+    input.addEventListener('change', saveToStorage);
+    input.addEventListener('input', debounce(saveToStorage, 1000));
+  });
+}
+
+function debounce(func, wait) {
+  var timeout;
+  return function() {
+    clearTimeout(timeout);
+    timeout = setTimeout(func, wait);
+  };
+}
+
+setupAutoSave();
+
+// GPS一括入力パース関数（地図範囲用）
+function parseGpsInput(type) {
+  var inputId = type + 'GpsQuick';
+  var value = document.getElementById(inputId).value.trim();
+  
+  var parts = value.split(',').map(function(p) { return p.trim(); });
+  
+  if (parts.length === 2) {
+    var lat = parseFloat(parts[0]);
+    var lng = parseFloat(parts[1]);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      document.getElementById(type + 'Lat').value = lat;
+      document.getElementById(type + 'Lng').value = lng;
+      
+      document.getElementById(inputId).style.borderColor = '#28a745';
+      setTimeout(function() {
+        document.getElementById(inputId).style.borderColor = '#ffc107';
+      }, 500);
+      
+      saveToStorage();
+    }
+  }
+}
+
+// ピンのGPS一括入力パース
+function parsePinGpsInput(pinId) {
+  var input = document.getElementById('pin-gps-' + pinId);
+  if (!input) return;
+  
+  var value = input.value.trim();
+  var parts = value.split(',').map(function(p) { return p.trim(); });
+  
+  if (parts.length === 2) {
+    var lat = parseFloat(parts[0]);
+    var lng = parseFloat(parts[1]);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      var row = document.getElementById('pin-' + pinId);
+      if (row) {
+        row.querySelector('.p-lat').value = lat;
+        row.querySelector('.p-lng').value = lng;
+        
+        input.style.borderColor = '#28a745';
+        setTimeout(function() {
+          input.style.borderColor = '#ffc107';
+        }, 500);
+        
+        saveToStorage();
+      }
+    }
+  }
+}
+
+function validateFolderName(input) {
+  var value = input.value;
+  var error = document.getElementById('folderNameError');
+  
+  if (value && !/^[a-zA-Z0-9_-]*$/.test(value)) {
+    error.style.display = 'block';
+    input.style.borderColor = '#dc3545';
+  } else {
+    error.style.display = 'none';
+    input.style.borderColor = '#c5d0de';
+  }
+}
+
+function showAddLineModal() {
+  editingLineIndex = -1;
+  document.getElementById('lineName').value = '';
+  document.getElementById('lineFolder').value = '';
+  document.getElementById('lineColor').value = '#3498db';
+  document.getElementById('lineDesc').value = '';
+  document.getElementById('folderNameError').style.display = 'none';
+  document.getElementById('lineModal').style.display = 'block';
+}
+
+function showEditLineModal(index) {
+  editingLineIndex = index;
+  var line = lines[index];
+  document.getElementById('lineName').value = line.name;
+  document.getElementById('lineFolder').value = line.folder;
+  document.getElementById('lineColor').value = line.color;
+  document.getElementById('lineDesc').value = line.desc || '';
+  document.getElementById('folderNameError').style.display = 'none';
+  document.getElementById('lineModal').style.display = 'block';
+}
+
+function closeLineModal() {
+  document.getElementById('lineModal').style.display = 'none';
+}
+
+function saveLine() {
+  var name = document.getElementById('lineName').value.trim();
+  var folder = document.getElementById('lineFolder').value.trim();
+  var color = document.getElementById('lineColor').value;
+  var desc = document.getElementById('lineDesc').value.trim();
+  
+  if (!name || !folder) {
+    alert('ライン名とフォルダ名を入力してください');
+    return;
+  }
+  
+  if (!/^[a-zA-Z0-9_-]+$/.test(folder)) {
+    alert('フォルダ名は英数字、ハイフン、アンダースコアのみ使用できます\n\n例：takao, r80214, main-route\nNG：高尾VR, main route');
+    return;
+  }
+  
+  var line = { name: name, folder: folder, color: color, desc: desc };
+  
+  if (editingLineIndex >= 0) {
+    lines[editingLineIndex] = line;
+  } else {
+    lines.push(line);
+  }
+  
+  updateLineList();
+  updateDataJsSection();
+  closeLineModal();
+  saveToStorage();
+}
+
+function deleteLine(index) {
+  if (confirm('このラインを削除しますか？')) {
+    var folder = lines[index].folder;
+    delete lineDataJsContents[folder];
+    lines.splice(index, 1);
+    updateLineList();
+    updateDataJsSection();
+    saveToStorage();
+  }
+}
+
+function updateLineList() {
+  var html = '';
+  lines.forEach(function(line, i) {
+    var hasDataJs = lineDataJsContents[line.folder] ? '<div class="line-datajs-status">✓ data.js読み込み済み</div>' : '';
+    html += '<div class="line-item">' +
+      '<div class="line-color" style="background:' + line.color + ';"></div>' +
+      '<div class="line-info">' +
+        '<div class="line-name">' + line.name + '</div>' +
+        '<div class="line-folder">フォルダ: ' + line.folder + '/</div>' +
+        hasDataJs +
+      '</div>' +
+      '<button class="btn-edit-line" onclick="showEditLineModal(' + i + ')">編集</button>' +
+      '<button class="btn-del-line" onclick="deleteLine(' + i + ')">削除</button>' +
+    '</div>';
+  });
+  document.getElementById('lineList').innerHTML = html;
+}
+
+function updateDataJsSection() {
+  var html = '';
+  
+  if (lines.length === 0) {
+    html = '<div class="warning-box">先にラインを追加してください</div>';
+  } else {
+    lines.forEach(function(line) {
+      var hasDataJs = lineDataJsContents[line.folder];
+      var statusHtml = hasDataJs 
+        ? '<div class="success-box">✓ data.js読み込み済み - ダウンロードボタンで更新版を取得できます</div>'
+        : '<div class="warning-box">data.jsをアップロードしてください</div>';
+      
+      html += '<div class="datajs-line-item">' +
+        '<div class="datajs-line-header">' +
+          '<div class="datajs-line-color" style="background:' + line.color + ';"></div>' +
+          '<div class="datajs-line-name">' + line.name + ' (' + line.folder + '/)</div>' +
+        '</div>' +
+        statusHtml +
+        '<input type="file" id="datajs-' + line.folder + '" accept=".js" style="margin-bottom: 8px;">' +
+        '<button class="btn-download" id="download-' + line.folder + '" style="display:' + (hasDataJs ? 'block' : 'none') + ';">💾 ' + line.name + 'のdata.jsをダウンロード</button>' +
+      '</div>';
+    });
+  }
+  
+  document.getElementById('dataJsSection').innerHTML = html;
+  
+  // ファイル入力のイベントリスナーを再設定
+  lines.forEach(function(line) {
+    var fileInput = document.getElementById('datajs-' + line.folder);
+    if (fileInput) {
+      fileInput.addEventListener('change', function() {
+        handleDataJsUpload(line.folder);
+      });
+    }
+    
+    var downloadBtn = document.getElementById('download-' + line.folder);
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', function() {
+        downloadLineDataJs(line.folder);
+      });
+    }
+  });
+}
+
+function handleDataJsUpload(lineFolder) {
+  var fileInput = document.getElementById('datajs-' + lineFolder);
+  var file = fileInput.files[0];
+  
+  if (!file) return;
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var content = e.target.result;
+    console.log('📂 ' + lineFolder + 'のdata.jsを読み込みました');
+    lineDataJsContents[lineFolder] = content;
+    updateLineList();
+    updateDataJsSection();
+  };
+  reader.readAsText(file);
+}
+function downloadLineDataJs(lineFolder) {
+  console.log('ダウンロード開始:', lineFolder);
+  
+  if (!lineDataJsContents[lineFolder]) {
+    alert('data.jsがアップロードされていません');
+    return;
+  }
+  
+  var pins = [];
+  var rows = document.querySelectorAll('.pin-row');
+  rows.forEach(function(row) {
+    var pinLineFolder = row.querySelector('.p-line').value;
+    if (pinLineFolder === lineFolder) {
+      var scene = parseInt(row.querySelector('.p-scene').value) || 1;
+      var headingInput = row.querySelector('.p-heading');
+      var heading = headingInput ? headingInput.value.trim() : '';
+      if (heading !== '' && !isNaN(parseInt(heading))) {
+        pins.push({ scene: scene, heading: parseInt(heading) });
+        console.log('✓ シーン' + scene + 'にheading ' + heading + '°を設定');
+      }
+    }
+  });
+  
+  try {
+    var content = lineDataJsContents[lineFolder];
+    console.log('📄 元のdata.js（最初の500文字）:', content.substring(0, 500));
+    
+    var jsonMatch = content.match(/var\s+APP_DATA\s*=\s*(\{[\s\S]*\});?\s*$/);
+    
+    if (!jsonMatch) {
+      jsonMatch = content.match(/APP_DATA\s*=\s*(\{[\s\S]*\})\s*;?/);
+    }
+    
+    if (!jsonMatch) {
+      console.error('❌ APP_DATA変数が見つかりません');
+      console.error('data.jsの内容:', content);
+      alert('data.jsの形式が正しくありません。\n\nAPP_DATA変数が見つかりませんでした。\n\ndata.jsは以下の形式である必要があります：\nvar APP_DATA = { ... };');
+      return;
+    }
+    
+    var jsonStr = jsonMatch[1];
+    console.log('📊 抽出したJSON（最初の300文字）:', jsonStr.substring(0, 300));
+    
+    jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
+    jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
+    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+    
+    console.log('🔧 整形後のJSON（最初の300文字）:', jsonStr.substring(0, 300));
+    
+    var appData;
+    try {
+      appData = JSON.parse(jsonStr);
+      console.log('✅ JSONパース成功');
+    } catch (parseError) {
+      console.error('❌ JSONパースエラー:', parseError);
+      console.error('パースしようとした内容:', jsonStr);
+      
+      alert('data.jsのJSON形式にエラーがあります。\n\n' + 
+            'エラー: ' + parseError.message + '\n\n' +
+            '【確認してください】\n' +
+            '1. 配列やオブジェクトの最後に余計なカンマ（,）がないか\n' +
+            '2. { } [ ] の開閉が正しいか\n' +
+            '3. 文字列が " " で囲まれているか\n\n' +
+            'F12キーを押してコンソールで詳細を確認してください。');
+      return;
+    }
+    
+    if (!appData.scenes || !Array.isArray(appData.scenes)) {
+      alert('data.jsにscenes配列が見つかりません');
+      return;
+    }
+    
+    console.log('🎬 シーン数:', appData.scenes.length);
+    
+    appData.scenes.forEach(function(scene, index) {
+      var sceneNumber = index + 1;
+      var pinData = pins.find(function(p) { return p.scene === sceneNumber; });
+      
+      if (pinData) {
+        scene.heading = pinData.heading;
+        console.log('✓ シーン' + sceneNumber + 'にheading=' + pinData.heading + 'を追加');
+      } else {
+        if (scene.heading !== undefined) {
+          delete scene.heading;
+        }
+      }
+    });
+    
+    var updatedDataJs = 'var APP_DATA = ' + JSON.stringify(appData, null, 2) + ';';
+    
+    console.log('✅ 更新後のdata.js生成完了');
+    
+    var blob = new Blob([updatedDataJs], { type: 'text/javascript' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'data.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    var lineName = lines.find(function(l) { return l.folder === lineFolder; }).name;
+    alert('✓ ' + lineName + 'のdata.jsをダウンロードしました！\n\nheading情報が' + pins.length + '個のシーンに追加されました。');
+    
+  } catch (error) {
+    console.error('❌ 予期しないエラー:', error);
+    alert('data.jsの処理中にエラーが発生しました:\n\n' + error.message + '\n\nF12キーを押してコンソールで詳細を確認してください。');
+  }
+}
+
+function updatePreview() {
+  var mainTitle = document.getElementById('mainTitle').value;
+  var mainTitleSize = document.getElementById('mainTitleSize').value;
+  var mainTitleColor = document.getElementById('mainTitleColor').value;
+  var mainTitleShadow = document.getElementById('mainTitleShadow').value;
+  
+  var descText = document.getElementById('descText').value;
+  var descSize = document.getElementById('descSize').value;
+  var descColor = document.getElementById('descColor').value;
+  var descShadow = document.getElementById('descShadow').value;
+  
+  var textAlign = document.getElementById('textHorizontalPos').value;
+  
+  document.getElementById('mainTitleSizeValue').textContent = mainTitleSize + 'px';
+  document.getElementById('mainTitleShadowValue').textContent = mainTitleShadow + '%';
+  document.getElementById('descSizeValue').textContent = descSize + 'px';
+  document.getElementById('descShadowValue').textContent = descShadow + '%';
+  document.getElementById('textTopOffsetValue').textContent = document.getElementById('textTopOffset').value + '%';
+  
+  function createNaturalShadow(intensity) {
+    var alpha = intensity / 100;
+    return '0 0 10px rgba(0,0,0,' + alpha + '), ' +
+           '0 0 20px rgba(0,0,0,' + (alpha * 0.8) + '), ' +
+           '0 0 30px rgba(0,0,0,' + (alpha * 0.6) + '), ' +
+           '0 0 40px rgba(0,0,0,' + (alpha * 0.4) + ')';
+  }
+  
+  var previewHTML = '';
+  
+  if (mainTitle) {
+    previewHTML += '<div style="font-size:' + (mainTitleSize/2) + 'px; color:' + mainTitleColor + '; font-weight:bold; text-align:' + textAlign + '; text-shadow:' + createNaturalShadow(mainTitleShadow) + '; margin-bottom:10px;">' + mainTitle + '</div>';
+  }
+  
+  if (descText) {
+    previewHTML += '<div style="font-size:' + (descSize/1.5) + 'px; color:' + descColor + '; text-align:' + textAlign + '; white-space:pre-wrap; line-height:1.6; text-shadow:' + createNaturalShadow(descShadow) + ';">' + descText + '</div>';
+  }
+  
+  document.getElementById('previewArea').innerHTML = previewHTML || '<span style="color:#aaa;">プレビュー</span>';
+}
+
+['mainTitle', 'mainTitleSize', 'mainTitleColor', 'mainTitleShadow', 'descText', 'descSize', 'descColor', 'descShadow', 'textHorizontalPos', 'textTopOffset'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('input', updatePreview);
+    el.addEventListener('change', updatePreview);
+  }
+});
+
+function addPin(lat, lng, name, scene, heading, lineFolder) {
+  pinCount++;
+  var n = pinCount;
+  var div = document.createElement('div');
+  div.className = 'pin-row';
+  div.id = 'pin-' + n;
+  
+  var defaultLine = lineFolder || (lines.length > 0 ? lines[0].folder : '');
+  
+  var lineOptions = lines.map(function(line) {
+    var selected = defaultLine === line.folder ? 'selected' : '';
+    return '<option value="' + line.folder + '" ' + selected + '>' + line.name + '</option>';
+  }).join('');
+  
+  var color = lines.find(function(l) { return l.folder === defaultLine; })?.color || '#e8453c';
+  
+  div.innerHTML =
+    '<div class="pin-num" style="background:' + color + ';">' + n + '</div>' +
+    '<select class="p-line" onchange="updatePinColor(' + n + '); saveToStorage();" style="max-width:110px">' + lineOptions + '</select>' +
+    '<input type="text" id="pin-gps-' + n + '" placeholder="GPS貼付：33.22, 131.63" class="gps-paste-input" style="min-width:180px">' +
+    '<input type="text" class="p-lat" placeholder="緯度" value="' + (lat||'') + '" onchange="saveToStorage()" style="max-width:90px">' +
+    '<input type="text" class="p-lng" placeholder="経度" value="' + (lng||'') + '" onchange="saveToStorage()" style="max-width:90px">' +
+    '<input type="text" class="name-input p-name" placeholder="名前" value="' + (name||'') + '" onchange="saveToStorage()">' +
+    '<input type="number" class="p-scene" placeholder="シーン番号" value="' + (scene||'') + '" onchange="saveToStorage()" style="max-width:80px">' +
+    '<input type="number" class="p-heading" placeholder="方向°" value="' + (heading||'') + '" step="1" onchange="saveToStorage()" style="max-width:70px">' +
+    '<button class="btn-del" onclick="removePin(' + n + ')">✕</button>';
+  document.getElementById('pinList').appendChild(div);
+  
+  var gpsInput = document.getElementById('pin-gps-' + n);
+  if (gpsInput) {
+    gpsInput.addEventListener('input', function() {
+      parsePinGpsInput(n);
+    });
+  }
+}
+
+function updatePinColor(pinId) {
+  var row = document.getElementById('pin-' + pinId);
+  if (!row) return;
+  
+  var lineFolder = row.querySelector('.p-line').value;
+  var line = lines.find(function(l) { return l.folder === lineFolder; });
+  if (line) {
+    row.querySelector('.pin-num').style.background = line.color;
+  }
+}
+
+function removePin(n) {
+  var el = document.getElementById('pin-' + n);
+  if (el) el.remove();
+  saveToStorage();
+}
+
+function generate() {
+  var title = document.getElementById('tourTitle').value || 'VRツアー';
+  var tlLat = parseFloat(document.getElementById('tlLat').value);
+  var tlLng = parseFloat(document.getElementById('tlLng').value);
+  var brLat = parseFloat(document.getElementById('brLat').value);
+  var brLng = parseFloat(document.getElementById('brLng').value);
+
+  if (isNaN(tlLat) || isNaN(tlLng) || isNaN(brLat) || isNaN(brLng)) {
+    alert('地図範囲のGPS座標を入力してください');
+    return;
+  }
+
+  var pins = [];
+  var rows = document.querySelectorAll('.pin-row');
+  rows.forEach(function(row) {
+    var lat = parseFloat(row.querySelector('.p-lat').value);
+    var lng = parseFloat(row.querySelector('.p-lng').value);
+    var name = row.querySelector('.p-name').value || 'ポイント';
+    var scene = parseInt(row.querySelector('.p-scene').value) || 1;
+    var headingInput = row.querySelector('.p-heading');
+    var heading = headingInput ? headingInput.value.trim() : '';
+    var lineFolder = row.querySelector('.p-line').value;
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      var pinData = { lat: lat, lng: lng, name: name, scene: scene, line: lineFolder };
+      if (heading !== '' && !isNaN(parseInt(heading))) {
+        pinData.heading = parseInt(heading);
+      }
+      pins.push(pinData);
+    }
+  });
+
+  if (pins.length === 0) {
+    alert('ピンを1つ以上追加してください');
+    return;
+  }
+
+  var textConfig = {
+    mainTitle: document.getElementById('mainTitle').value,
+    mainTitleSize: document.getElementById('mainTitleSize').value,
+    mainTitleColor: document.getElementById('mainTitleColor').value,
+    mainTitleShadow: document.getElementById('mainTitleShadow').value,
+    descText: document.getElementById('descText').value,
+    descSize: document.getElementById('descSize').value,
+    descColor: document.getElementById('descColor').value,
+    descShadow: document.getElementById('descShadow').value,
+    verticalPos: document.getElementById('textVerticalPos').value,
+    horizontalPos: document.getElementById('textHorizontalPos').value,
+    topOffset: document.getElementById('textTopOffset').value
+  };
+
+  generateMapHTML(title, tlLat, tlLng, brLat, brLng, pins, textConfig);
+}
+
+function generateMapHTML(title, tlLat, tlLng, brLat, brLng, pins, textConfig) {
+  var pinsStr = pins.map(function(p) {
+    var line = lines.find(function(l) { return l.folder === p.line; });
+    var color = line ? line.color : '#e8453c';
+    var str = '  { lat: ' + p.lat + ', lng: ' + p.lng + ', name: \'' + p.name.replace(/'/g, "\\'") + '\', scene: ' + p.scene + ', line: \'' + p.line + '\', color: \'' + color + '\'';
+    if (p.heading !== undefined) {
+      str += ', heading: ' + p.heading;
+    }
+    str += ' }';
+    return str;
+  }).join(',\n');
+
+  var textOverlayHTML = '';
+  var textOverlayCSS = '';
+  
+  if (textConfig.mainTitle || textConfig.descText) {
+    var positionStyle = textConfig.verticalPos === 'top' ? 'top: ' + textConfig.topOffset + '%;' : 
+                       textConfig.verticalPos === 'center' ? 'top: 50%; transform: translateY(-50%);' : 
+                       'bottom: ' + textConfig.topOffset + '%;';
+    
+    var alignStyle = 'text-align: ' + textConfig.horizontalPos + ';';
+    
+    var mainShadowAlpha = textConfig.mainTitleShadow / 100;
+    var descShadowAlpha = textConfig.descShadow / 100;
+    
+    var mainTitleShadow = '0 0 10px rgba(0,0,0,' + mainShadowAlpha + '), 0 0 20px rgba(0,0,0,' + (mainShadowAlpha * 0.8) + '), 0 0 30px rgba(0,0,0,' + (mainShadowAlpha * 0.6) + '), 0 0 40px rgba(0,0,0,' + (mainShadowAlpha * 0.4) + ')';
+    var descTextShadow = '0 0 10px rgba(0,0,0,' + descShadowAlpha + '), 0 0 20px rgba(0,0,0,' + (descShadowAlpha * 0.8) + '), 0 0 30px rgba(0,0,0,' + (descShadowAlpha * 0.6) + '), 0 0 40px rgba(0,0,0,' + (descShadowAlpha * 0.4) + ')';
+    
+    textOverlayCSS = '.text-overlay { position: absolute; ' + positionStyle + ' left: 0; right: 0; z-index: 100; padding: 0 20px; pointer-events: none; ' + alignStyle + ' }\n' +
+      '.overlay-title { font-size: ' + textConfig.mainTitleSize + 'px; color: ' + textConfig.mainTitleColor + '; font-weight: bold; font-family: \'Hiragino Kaku Gothic Pro\', \'Meiryo\', sans-serif; text-shadow: ' + mainTitleShadow + '; margin-bottom: 12px; }\n' +
+      '.overlay-desc { font-size: ' + textConfig.descSize + 'px; color: ' + textConfig.descColor + '; white-space: pre-wrap; font-family: \'Hiragino Kaku Gothic Pro\', \'Meiryo\', sans-serif; line-height: 1.6; text-shadow: ' + descTextShadow + '; }\n';
+    
+    textOverlayHTML = '<div class="text-overlay">\n';
+    if (textConfig.mainTitle) {
+      textOverlayHTML += '  <div class="overlay-title">' + textConfig.mainTitle + '</div>\n';
+    }
+    if (textConfig.descText) {
+      textOverlayHTML += '  <div class="overlay-desc">' + textConfig.descText + '</div>\n';
+    }
+    textOverlayHTML += '</div>\n';
+  }
+
+  var code = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<title>' + title + '</title>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n<style>\n* { margin: 0; padding: 0; box-sizing: border-box; }\nbody, html { width: 100%; height: 100%; overflow: hidden; background: #222; }\n.map-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #222; }\n.map-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }\n' + textOverlayCSS + '.map-pin { position: absolute; transform: translate(-50%, -100%); cursor: pointer; z-index: 10; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s; -webkit-tap-highlight-color: transparent; }\n.map-pin:hover, .map-pin:active { transform: translate(-50%, -100%) scale(1.15); }\n.pin-icon { width: 36px; height: 36px; border: 3px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }\n.pin-number { transform: rotate(45deg); font-size: 14px; font-weight: bold; color: white; line-height: 1; }\n.pin-shadow { width: 10px; height: 5px; background: rgba(0,0,0,0.25); border-radius: 50%; margin-top: 2px; }\n.pin-label { background: rgba(255,255,255,0.95); color: #333; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.4); margin-bottom: 4px; pointer-events: none; font-family: sans-serif; }\n.compass-container { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }\n.compass-icon { width: 24px; height: 24px; background: rgba(255,255,255,0.95); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; position: relative; }\n.compass-needle { position: absolute; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid #e8453c; transform-origin: center 8px; }\n.compass-text { background: rgba(255,255,255,0.95); color: #e8453c; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-family: sans-serif; }\n</style>\n</head>\n<body>\n<div class="map-container">\n  <img src="map.jpg" alt="地図" class="map-image">\n' + textOverlayHTML + '</div>\n<script>\nvar MAP_BOUNDS = {\n  topLeft: { lat: ' + tlLat + ', lng: ' + tlLng + ' },\n  bottomRight: { lat: ' + brLat + ', lng: ' + brLng + ' }\n};\nvar PINS = [\n' + pinsStr + '\n];\n\nfunction goToScene(pin) {\n  var url = \'.\/\' + pin.line + \'\/viewer.html?scene=\' + pin.scene;\n  console.log(\'📍 移動先:\', url);\n  console.log(\'📂 ライン:\', pin.line, \'シーン:\', pin.scene);\n  window.location.href = url;\n}\n\nfunction gpsToPercent(lat, lng) {\n  var x = (lng - MAP_BOUNDS.topLeft.lng) / (MAP_BOUNDS.bottomRight.lng - MAP_BOUNDS.topLeft.lng) * 100;\n  var y = (MAP_BOUNDS.topLeft.lat - lat) / (MAP_BOUNDS.topLeft.lat - MAP_BOUNDS.bottomRight.lat) * 100;\n  return { x: x, y: y };\n}\n\nvar container = document.querySelector(\'.map-container\');\nPINS.forEach(function(pin, i) {\n  var pos = gpsToPercent(pin.lat, pin.lng);\n  var el = document.createElement(\'div\');\n  el.className = \'map-pin\';\n  el.style.left = pos.x + \'%\';\n  el.style.top = pos.y + \'%\';\n  \n  var compassHTML = \'\';\n  if (pin.heading !== undefined && pin.heading !== null && !isNaN(pin.heading)) {\n    console.log(\'🧭 ピン\' + (i+1) + \' "\' + pin.name + \'" にheading=\' + pin.heading + \'°を設定\');\n    compassHTML = \'<div class="compass-container"><div class="compass-icon"><div class="compass-needle" style="transform: rotate(\' + pin.heading + \'deg);"></div></div><div class="compass-text">\' + Math.round(pin.heading) + \'°</div></div>\';\n  }\n  \n  el.innerHTML = compassHTML + \'<div class="pin-label">\' + pin.name + \'</div><div class="pin-icon" style="background:\' + pin.color + \';"><span class="pin-number">\' + (i+1) + \'</span></div><div class="pin-shadow"></div>\';\n  el.addEventListener(\'click\', function() { goToScene(pin); });\n  container.appendChild(el);\n});\n\nconsole.log(\'✅ map.html初期化完了 - ピン数:\', PINS.length);\n<\/script>\n</body>\n</html>';
+
+  document.getElementById('outputMap').textContent = code;
+  document.getElementById('outputMap').style.display = 'block';
+  document.getElementById('copyMapBtn').style.display = 'block';
+
+  var blob = new Blob([code], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'map.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  alert('✅ map.htmlを生成しました！\n\n【次のステップ】各ラインのviewer.htmlに以下のボタンを追加してください：\n\n<button onclick="window.location.href=\'../map.html\'" style="position:fixed; top:20px; left:20px; z-index:1000; padding:10px 20px; background:#0066cc; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍 マップに戻る</button>');
+}
+
+function copyMapCode() {
+  var text = document.getElementById('outputMap').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    document.getElementById('successMapMsg').style.display = 'block';
+    setTimeout(function() {
+      document.getElementById('successMapMsg').style.display = 'none';
+    }, 3000);
+  });
+}
+</script>
+
+</body>
+</html>
